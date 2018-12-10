@@ -1,0 +1,74 @@
+version: '3'
+services:
+  zookeeper:
+    image: 'wurstmeister/zookeeper'
+    ports:
+     - '2181:2181' 
+     - '2888:2888'
+     - '3888:3888' 
+    container_name: zookeeper
+    volumes:
+     - /etc/localtime:/etc/localtime
+     - ./zk/conf/zoo.cfg:/opt/zookeeper-3.4.9/conf/zoo.cfg
+     - ./zk/data:/opt/zookeeper-3.4.9/data
+     - ./zk/log:/opt/zookeeper-3.4.9/logs
+     - ./zk/zkServer.sh:/opt/zookeeper-3.4.9/bin/zkServer.sh    --privileged=true 
+    restart: always
+    networks:
+     - net-spring
+  kafka:
+    image: 'wurstmeister/kafka'
+    container_name: kafka
+    ports: 
+     - "9092:9092"
+    volumes:
+     -  /etc/localtime:/etc/localtime
+    depends_on:
+     - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 100
+      HOST_IP: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092
+    restart: always               
+    networks: 
+      - net-spring    
+  kafka-manager: 
+    image: 'sheepkiller/kafka-manager'
+    container_name: kafka-manager
+    environment:
+      ZK_HOSTS: zookeeper
+    ports:
+      - "9000:9000"
+    depends_on:
+      - zookeeper
+      - kafka
+    networks:
+      - net-spring
+#  rabbitmq:
+#    image: 'rabbitmq:management'
+#    container_name: rabbitmq
+#    ports:
+#     - "15672:15672"
+#     - "5671-5672:5671-5672"
+#    restart: always
+#    environment: 
+#      RABBITMQ_DEFAULT_USER: admin
+#      RABBITMQ_DEFAULT_PASS: admin
+  flume:
+    build: .    
+    container_name: flume
+    volumes:
+      - /opt/logs:/opt/logs
+      - ./flume/flume.conf:/opt/flume/conf/flume.conf 
+    environment:
+      FLUME_AGENT_NAME: docker                
+    networks:
+      - net-spring
+    depends_on:
+      - kafka
+networks:
+  net-spring:
+    driver: bridge
