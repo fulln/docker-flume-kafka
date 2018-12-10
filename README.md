@@ -8,3 +8,10 @@
 
 ### flume修改输入源配置
  进入flume文件夹中conf文件夹中 修改flume.conf 这里实现的是读取文件夹中的log
+
+## 注意
+在docker-compose.yml中 
+```environment:
+      FLUME_AGENT_NAME: docker  
+```
+这个值必须有，而且就是设置的flume.conf中的a值
